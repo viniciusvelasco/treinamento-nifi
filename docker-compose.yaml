@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+  nifi:
+    container_name: nifi
+    image: apache/nifi:latest
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    environment:
+      - NIFI_WEB_HTTP_PORT=8181
+    volumes:
+      - /nifi:/nifi/libs
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata01:/elasticseacrh/data
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.1
+    container_name: kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - SERVER_NAME=kibana.local
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+  postgres:
+    container_name: postgres-nifi
+    image: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-suasenha}
+      PGDATA: /data/postgres
+    ports:
+      - "5435:5432"
+    restart: unless-stopped
+  pgadmin4:
+    container_name: pgadmin4
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "vinicius.velasco@live.com"
+      PGADMIN_DEFAULT_PASSWORD: "Vinicius@1983"
+    ports:
+      - "80:8050"
+    depends_on:
+      - postgres
+volumes:
+  esdata01:
+    driver: local
